@@ -5,6 +5,6 @@ from wtforms.validators import  DataRequired
 
 class LoginForm(Form):
     openid = StringField('openid', validators=[DataRequired(),])
-    remeber_me = BooleanField('remember_me', default=False)
+    remember_me = BooleanField('remember_me', default=False)
 
 
