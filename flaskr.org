@@ -128,3 +128,75 @@ pip install flask_moment
 
 *** flash消息
 + 请求完成后，有时需要让用户知道状态发生了变化。这里可以使用确认消息，警告或者错误提醒。flash()可以实现这种效果。
+
+** 数据库
+*** 配置数据库
+#+BEGIN_SRC python
+  from flask import Flask
+  from flask_sqlalchemy import SQLAlchemy
+  impor os
+
+  basedir = os.path.abspath(os.path.dirname(__file__))
+
+  app = Flask(__name__)
+  app.config[
+      'SQLALCHEMY_DATABASE_URI' = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+  ]
+  app.config['SQLALCHEMY_COMMIT_ON_)TEARDOWN'] = True
+  app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+  db = SQLAlchemy(app)
+#+END_SRC
+
++ 一个小例子
+#+BEGIN_SRC python
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    users = db.relationship('User', backref='role', lazy='dynamic')
+
+    def __str__(self):
+        return self.name
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.INTEGER, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+    def __str__(self):
+        return self.username
+
+#+END_SRC
++ 常用的SQLALchemy列类型
+| Integer      | int                | 32位       |
+| SmallInteger | int                | 16         |
+| BigInteger   | int                | 不限制精度 |
+| Float        | float              | 浮点数     |
+| Numeric      |                    | 定点数     |
+| String       | str                | 字符串     |
+| Text         | str                | 文本       |
+| Boolean      | bool               | 布尔值     |
+| Date         |                    | 日期       |
+| Time         |                    | 时间       |
+| Datetime     |                    | 日期时间   |
+| Interval     | datetime.timedelta | 时间间隔   |
+| Enum         | str                | 字符串     |
+| LargeBinary  | str                | 二进制文件      |
+
++ 可指定参数属性的选项
+| primary_key | True为主键       |
+| unique      | True不允许重复   |
+| index       | True为可索引     |
+| nullable    | True允许使用空值 |
+| default     | 定义默认值            |
+
++ 定义关系时常用的配置选项
+| backref   | 在关系的另一个模型中添加反向引用                                                   |
+| lazy      | 指定如何加载相关记录。select(首次访问按需加载)，immediate(源对象加载后就加载)      |
+|           | joined(加载记录), subquery(立即加载，使用子查询)，noload(永不加载),dynamic(不加载) |
+|           | 但提供加载记录的查询                                                               |
+| order_by  | 排序方式                                                                           |
+| secondary | 多对多关系中关系表的名字                                                                      |
