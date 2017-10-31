@@ -11,20 +11,26 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, StringField, SubmitField
 from wtforms.validators import Required
 
+from flask_script import Shell
+
+from flask_migrate import Migrate, MigrateCommand
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'you will never guess'
-
 manager = Manager(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+manager.add_command('db', MigrateCommand)
 
 
 class Role(db.Model):
@@ -54,12 +60,17 @@ class NameForm(FlaskForm):
 def index():
     form = NameForm()
     if form.validate_on_submit():
-        old_name = session.get('name')
-        if old_name is not None and old_name != form.name.data:
-            flash('you has changed your name')
+        user = User.query.filter_by(username=form.name.data).first()
+        if user is None:
+            user = User(username=form.name.data)
+            db.session.add(user)
+            session['known'] = False
+        else:
+            session['known'] = True
         session['name'] = form.name.data
+        form.name.data = ''
         return redirect(url_for('index'))
-    return render_template('index.html', name=session.get('name'), form=form)
+    return render_template('index.html', name=session.get('name'), form=form, known = session.get('known', False))
 
 
 @app.route('/user/<name>')
@@ -76,6 +87,9 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
+def make_shell_context():
+    return dict(app=app, db=db, User=User, Role=Role)
+manager.add_command("shell", Shell(make_context=make_shell_context))
 
 if __name__ == '__main__':
     manager.run()
