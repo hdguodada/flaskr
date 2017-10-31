@@ -1,0 +1,130 @@
+* flask-org
+** 初始化
+** 初始化
+#+BEGIN_SRC python
+from flask import Flask
+app = Flask(__name__)
+#+END_SRC
+__name__这个参数决定程序的根目录，以便以后能找到相对于程序根目录的资源文件位置。
+** 程序上下文和请求上下文
+Flask 从客户端收到请求时，要让视图函数能够访问一下对象，这样才能处理请求。在服务器中，多个线程同时处理不同
+客户端发送的不同请求，每个线程看到的request对象必然不同。Flask使用上下文让特定的变量在一个线程中全局可访问，
+同时不干扰其他线程。
+| current_app | 程序上下文 | 当前激活程序的程序实例                                 |
+| g           | 程序上下文 | 处理请求时用作临时存储的对象。每次请求都会重设这个变量 |
+| request     | 请求上下文 | 请求对象，封装了客户端发出的HTTP请求中的内容           |
+| session     | 请求上下文 | 用户会话，存储请求之间需要“记住”的值的词典             |
+** 请求调度
+程序收到客户端发来的请求时，要找到处理该请求的视图函数。为完成这个任务，Flask在程序的URL映射中查找请求的URL。
+
+** flask-script
++ 安装
+pip install flask-script
+#+BEGIN_SRC python
+  # flask_script 示例
+  from flask_script import Manager
+  manager = Manager(app)
+
+  if __name__ == '__main__':
+      manager.run()
+#+END_SRC
+
+** jinja2
+*** 常用过滤器
+| safe        | 渲染时不转义         |
+| capticalize | 首字母大写，其他小写 |
+| lower       | 小写                 |
+| upper       | 大写                 |
+| title       | 每个单词首字母大写   |
+| trim        | 去掉值的首尾空格     |
+| striptags   | 渲染前删掉HTML标签          |
+
+** 链接
+url_for()辅助函数，可以使用程序URL映射中保存的信息生成url
+
+** flask_moment
++ 安装
+pip install flask_moment
+
++ 示例
+#+BEGIN_SRC python
+  from flask_moment import Moment
+  moment = Moment(app)
+
+  #flask_moment以来jquery.js, bootstrap已经引入，
+  #只需引入moment.js 即可。
+  """
+  templates/base.html
+  {% block scripts %}
+  {{ super() }}
+  {{ moment.include_moment() }}
+  {% endblock %}
+  """
+#+END_SRC
+
+** Web 表单
++ pip install flask_wtf
++ 为实现跨站请求伪造保护，需要设置一个秘钥。
+#+BEGIN_SRC python
+  app = Flask(__name__)
+  app.config['SECRET_KEY'] = 'hard to guess'
+
+#+END_SRC
+
+*** 表单类
++ 定义表单类：
+#+BEGIN_SRC python
+  from flask_wtf import FlaskForm
+  from wtforms import StringField, SubmitField
+  from wtforms.validators import Required
+
+
+  class NameForm(FlaskForm):
+      name = StringField('what is your name', validators=[Required()])
+      submit = SubmitField('Submit')
+
+#+END_SRC
+
+*** 支持的字段
+| StringField         | 文本字段                     |
+| TextAreaField       | 多行文本                     |
+| PasswordField       | 密码                         |
+| HiddenField         | 隐藏字段                     |
+| DateField           | date字段                     |
+| DateTimeField       | datetime字段                 |
+| IntegerField        | 整数                         |
+| FloatField          | 浮点数                       |
+| BooleanField        | 复选框                       |
+| RadioField          | 单选框                       |
+| SelectField         | 下拉列表                     |
+| SelectMultipleField | 复选下拉列表                 |
+| FileField           | 文件上传字段                 |
+| SubmitField         | 表单提交按钮                 |
+| FormField           | 把表单作为字段嵌入另一个表单 |
+| FieldList           |                              |
+
+*** 验证函数
+| email       | 验证电子邮件               |
+| EquilTo     | 比较两个字段值             |
+| IPAddress   | 验证ip4网址                |
+| Length      | 验证长度                   |
+| NumberRange | 输入的值的范围             |
+| Optional    | 无输入值时跳过其他验证函数 |
+| Required    | 确保有值                   |
+| Regexp      | 正则表达验证输入值         |
+| URL         | 验证URL                    |
+| Anyof       | 确保输入值再可选值列表中   |
+| Noneof      | 确保输入值不在列表中                 |
+
+*** 把表单渲染成HTML
+
+*** 重定向与用户会话
++ 在用户提交表单，然后刷新浏览器时，会看到一个莫名其妙的警告，要求再次确认。之所以出现这种情况，是因为
+刷新页面时浏览器会重新发送之前已经发送过的最后一个请求。如果这个请求是一个包含表单数据的POST请求，刷新页面时浏览器会重新发送之前已经发送过的最后一个请求
+页面后会再次提交表单。大多数情况下，这不是理想的处理方式。
+
++ 这种需求的实现方式是，使用重定向作为POST请求的相应，而不是使用常用相应。重定向是特殊的相应，响应内容是URL。浏览器
+收到这种响应时，会向重定向的URL发GET请求。
+
+*** flash消息
++ 请求完成后，有时需要让用户知道状态发生了变化。这里可以使用确认消息，警告或者错误提醒。flash()可以实现这种效果。
